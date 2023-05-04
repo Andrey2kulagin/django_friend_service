@@ -1,0 +1,6 @@
+/venv/
+/.idea/
+/andrey_sender/htmlcov
+**/__pycache__/*
+to_emails.txt
+.coverage
