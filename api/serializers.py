@@ -5,19 +5,18 @@ from rest_framework import serializers
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=50, write_only=True, required=False)
     confirm_password = serializers.CharField(max_length=50, write_only=True, required=False)
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = User
         fields = [
+            "id",
             "username",
             "password",
             "confirm_password"
         ]
 
     def validate(self, data):
-        if "username" in data:
-            if len(User.objects.filter(username=data["username"])):
-                raise serializers.ValidationError("Пользователь с таким именем уже существует")
         if "password" in data:
             if "confirm_password" in data:
                 if data["password"] != data["confirm_password"]:
