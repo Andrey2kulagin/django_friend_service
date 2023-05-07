@@ -1,5 +1,6 @@
 from .models import Friendship, UserApplication
 from django.contrib.auth.models import User
+from rest_framework.response import Response
 
 
 class FriendshipStatusHandler:
@@ -23,7 +24,6 @@ class FriendshipStatusHandler:
         else:
             return self.result_messages["no_friendship"]
 
-
     @staticmethod
     def is_friendship(username1: User, username2: User) -> bool:
         return Friendship.objects.filter(user1=username1, user2=username2).exists() or Friendship.objects.filter(
@@ -44,3 +44,39 @@ class FriendshipStatusHandler:
             return self.result_messages["incoming_application"]
         else:
             return self.result_messages["no_friendship"]
+
+
+def filter_queryset(user):
+    queryset = UserApplication.objects.all().order_by('created_at').filter(user_from=user, status="Отправлена")
+    sorted_accepted = UserApplication.objects.all().order_by('-created_at')
+    queryset = queryset | sorted_accepted.filter(user_from=user, status="Принята")[:20]
+    sorted_rejected = UserApplication.objects.all().order_by('-created_at')
+    queryset = queryset | sorted_rejected.filter(user_from=user, status="Отклонена")[:20]
+    return queryset
+
+
+def is_there_incoming_application(username1, username2):
+    return UserApplication.objects.filter(user_from=username2, user_to=username1,
+                                          status="Отправлена").exists()
+
+
+def user_application_create(self, serializer, request):
+    validate_data = serializer.is_valid(raise_exception=True)
+    if is_there_incoming_application(request.user, validate_data.get("user_to")):
+        my_model = serializer.save()
+        my_model.user_from = request.user
+        my_model.status = "Отправлена"
+        my_model.save()
+    else:
+        create_friendship(request.user, validate_data.get("user_to"))
+    headers = self.get_success_headers(serializer.data)
+    return Response(serializer.data, status=201, headers=headers)
+
+
+def create_friendship(username1, username2):
+    if FriendshipStatusHandler.is_friendship(username1, username2):
+        raise Exception("Пользователь уже у вас в друзьях")
+    username1 = User.objects.get(username1)
+    username2 = User.objects.get(username2)
+    Friendship.objects.create(user1=username1, user2=username2)
+

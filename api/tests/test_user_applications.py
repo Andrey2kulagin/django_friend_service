@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from ..models import UserApplication, Friendship
 
 
-class UserDetailTest(APITestCase):
+class InOutcomingApplicationsTest(APITestCase):
     def setUp(self):
         # создаем 4 пользователей
         self.first_user = User.objects.create_user(
@@ -65,3 +65,28 @@ class UserDetailTest(APITestCase):
         url = reverse('outcoming_list')
         response = self.client.get(url, format='json')
         self.assertEqual(401, response.status_code)
+
+
+class SendApplicationsTest(APITestCase):
+    def setUp(self):
+        # создаем 4 пользователей
+        self.first_user = User.objects.create_user(
+            username='first_user', password='password')
+        self.second_user = User.objects.create_user(
+            username='second_user', password='password')
+        self.third_user = User.objects.create_user(
+            username='third_user', password='password')
+        self.fourth_user = User.objects.create_user(
+            username='fourth_user', password='password')
+
+    def test_send_application_1(self):
+        # стандартная работа
+        url = reverse('send_application')
+        data = {
+            "user_to": self.first_user.username
+        }
+        self.client.force_authenticate(user=self.second_user)
+        response = self.client.post(url, data, format='json')
+        print(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, len(response.data))

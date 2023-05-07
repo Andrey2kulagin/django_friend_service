@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, UserIncomingApplicationSerializer, UserOutcomingApplicationSerializer
+from .serializers import UserSerializer, UserIncomingApplicationSerializer, ApplicationSerializer, \
+    ApplicationSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .service import FriendshipStatusHandler
+from .service import FriendshipStatusHandler, filter_queryset, user_application_create
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from .models import UserApplication
 
@@ -71,18 +72,26 @@ class IncomingApplicationsList(ListAPIView):
 
 class OutcomingApplicationsList(ListAPIView):
     queryset = UserApplication.objects.all()
-    serializer_class = UserOutcomingApplicationSerializer
+    serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method == "GET":
-            queryset = UserApplication.objects.filter(user_from=self.request.user, status="Отправлена").order_by(
-                'created_at')
-            queryset.union(
-                UserApplication.objects.filter(user_from=self.request.user, status="Принята").order_by('-created_at'
-                                                                                                       )[:20])
-            queryset.union(
-                UserApplication.objects.filter(user_from=self.request.user, status="Отклонена").order_by('-created_at'
-                                                                                                         )[:20])
+            queryset = filter_queryset(self.request.user)
         return queryset
+
+
+class SendApplication(CreateAPIView):
+    queryset = UserApplication.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            return user_application_create(self, serializer, request)
+        except User.DoesNotExist:
+            data = {'Error': "Такого пользователя не существует"}
+            return Response(data, status=404)

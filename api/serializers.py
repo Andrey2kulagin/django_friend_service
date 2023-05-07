@@ -58,10 +58,15 @@ class UserIncomingApplicationSerializer(serializers.ModelSerializer):
         ]
 
 
-class UserOutcomingApplicationSerializer(serializers.ModelSerializer):
+class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserApplication
         fields = [
-            "user_from",
+            "user_to",
             "status"
         ]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        if self.context.get('requests').method == "POST":
+            fields["status"].required = False

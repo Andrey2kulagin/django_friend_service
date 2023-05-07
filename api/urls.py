@@ -1,4 +1,4 @@
-from .views import UserViewSet, FriendshipStatus, IncomingApplicationsList, OutcomingApplicationsList
+from .views import UserViewSet, FriendshipStatus, IncomingApplicationsList, OutcomingApplicationsList, SendApplication
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
@@ -13,6 +13,7 @@ urlpatterns = [
     # APPLICATIONS
     path('applications/incoming_list/', IncomingApplicationsList.as_view(), name="incoming_list"),
     path('applications/outcoming_list/', OutcomingApplicationsList.as_view(), name="outcoming_list"),
+    path('applications/send_application/', SendApplication.as_view(), name="send_application"),
     # AUTH
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
