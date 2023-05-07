@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from .models import UserApplication
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,3 +48,20 @@ class UserSerializer(serializers.ModelSerializer):
             fields['password'].required = False
             fields['confirm_password'].required = False
         return fields
+
+
+class UserIncomingApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserApplication
+        fields = [
+            "user_from"
+        ]
+
+
+class UserOutcomingApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserApplication
+        fields = [
+            "user_from",
+            "status"
+        ]

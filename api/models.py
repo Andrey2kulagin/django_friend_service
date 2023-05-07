@@ -10,6 +10,7 @@ class UserApplication(models.Model):
                ("Принята", "Принята"),
                ("Отклонена", "Отклонена"))
     status = models.CharField(max_length=50, choices=choices)
+    created_at = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
 
     class Meta:

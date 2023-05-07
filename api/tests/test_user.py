@@ -1,7 +1,6 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
 from ..models import UserApplication, Friendship
 from ..service import FriendshipStatusHandler
 
@@ -331,4 +330,3 @@ class UserFriendshipStatusTest(APITestCase):
         url = reverse('is_friend', kwargs={'username': "No user"})
         response = self.client.get(url, format='json')
         self.assertEqual(404, response.status_code)
-

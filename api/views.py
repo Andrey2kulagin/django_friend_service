@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserIncomingApplicationSerializer, UserOutcomingApplicationSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .service import FriendshipStatusHandler
-
+from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
+from .models import UserApplication
 
 
 # Create your views here.
@@ -54,3 +55,34 @@ class FriendshipStatus(APIView):
         except Exception as e:
             data = {'Error': e.args[0]}
             return Response(data, status=400)
+
+
+class IncomingApplicationsList(ListAPIView):
+    queryset = UserApplication.objects.all()
+    serializer_class = UserIncomingApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.method == "GET":
+            queryset = UserApplication.objects.filter(user_to=self.request.user, status="Отправлена")
+        return queryset
+
+
+class OutcomingApplicationsList(ListAPIView):
+    queryset = UserApplication.objects.all()
+    serializer_class = UserOutcomingApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.method == "GET":
+            queryset = UserApplication.objects.filter(user_from=self.request.user, status="Отправлена").order_by(
+                'created_at')
+            queryset.union(
+                UserApplication.objects.filter(user_from=self.request.user, status="Принята").order_by('-created_at'
+                                                                                                       )[:20])
+            queryset.union(
+                UserApplication.objects.filter(user_from=self.request.user, status="Отклонена").order_by('-created_at'
+                                                                                                         )[:20])
+        return queryset
