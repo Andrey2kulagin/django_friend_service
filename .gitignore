@@ -4,4 +4,3 @@
 **/__pycache__/*
 to_emails.txt
 .coverage
-db.sqlite3
