@@ -17,11 +17,11 @@ OpenApi спецификация: https://app.swaggerhub.com/apis/andrey2kulagin
 ## Описание запуска(подразумевается, что поставлен python и pip и git)
 1. Склонировать проект перейти в папку, которую склонировали, создать и запустить виртуальное окружение
 Клонирование проекта:
-  git clone  https://github.com/Andrey2kulagin/django_friend_service.git
-  cd django_friend_service
+   git clone  https://github.com/Andrey2kulagin/django_friend_service.git
+   cd django_friend_service
 Настройка виртуального окружения для windows
- python -m venv venv
- venv\Scripts\activate.bat
+  python -m venv venv
+  venv\Scripts\activate.bat
 Настройка виртуального окружения для Unix(macOS, Linux)
  python -m venv venv
  source venv/bin/activate
