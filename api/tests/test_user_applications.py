@@ -6,7 +6,7 @@ from ..models import UserApplication, Friendship
 
 class InOutcomingApplicationsTest(APITestCase):
     def setUp(self):
-        # создаем 4 пользователей
+        # создаем пользователей
         self.first_user = User.objects.create_user(
             username='first_user', password='password')
         self.second_user = User.objects.create_user(

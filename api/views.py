@@ -1,14 +1,16 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, UserIncomingApplicationSerializer, ApplicationSerializer, DecisionSerializer
+from .serializers import UserSerializer, UserIncomingApplicationSerializer, ApplicationSerializer, DecisionSerializer, \
+    FriendshipSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .service import FriendshipStatusHandler, set_decision
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
-from .models import UserApplication
+from .models import UserApplication, Friendship
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 # Create your views here.
@@ -118,3 +120,37 @@ class ApplicationDecision(APIView):
         else:
             errors = serializer.errors
             return Response(errors, status=400)
+
+
+class FriendsList(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = FriendshipSerializer
+
+    def get_queryset(self):
+        request = self.request
+        user = request.user
+        queryset = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
+        return queryset
+
+
+class DeleteFriendship(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
+        return queryset
+
+    def delete(self, request, username):
+        user_to_del = User.objects.filter(username=username)
+        if user_to_del.exists():
+            user_to_del = user_to_del[0]
+        else:
+            return Response({"error": "This user does not exist"}, status=404)
+        queryset = self.get_queryset()
+        delete_qs_object = queryset.filter(Q(user1=user_to_del) | Q(user2=user_to_del))
+        if delete_qs_object.exists():
+            delete_qs_object[0].delete()
+            return Response({"status": "successful delete"}, status=204)
+        else:
+            return Response({"error": "user is not your friend"}, status=400)

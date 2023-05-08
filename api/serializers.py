@@ -2,7 +2,7 @@ from abc import ABC
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import UserApplication
+from .models import UserApplication, Friendship
 from .service import is_there_incoming_application, create_friendship, set_application_status, \
     FriendshipStatusHandler
 
@@ -120,8 +120,31 @@ class DecisionSerializer(serializers.Serializer):
             raise serializers.ValidationError("Пользователя с таким именем нет")
         user_from = self.context.get('request').user
         if not UserApplication.objects.filter(user_from=to_users[0], user_to=user_from, status="Отправлена").exists():
-
             raise serializers.ValidationError("У вас нет активной заявки с этим пользователем")
         if FriendshipStatusHandler.is_friendship(user_from, to_users[0]):
             raise serializers.ValidationError("У вас уже есть дружба с этим пользователем")
         return data
+
+
+class FriendshipSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Friendship
+        fields = [
+            'username',
+            'id'
+        ]
+
+    def get_username(self, obj):
+        if self.context['request'].user == obj.user1:
+            return obj.user2.username
+        else:
+            return obj.user1.username
+
+    def get_id(self, obj):
+        if self.context['request'].user == obj.user1:
+            return obj.user2.id
+        else:
+            return obj.user1.id
