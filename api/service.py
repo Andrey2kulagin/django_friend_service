@@ -46,15 +46,6 @@ class FriendshipStatusHandler:
             return self.result_messages["no_friendship"]
 
 
-def filter_queryset(user):
-    queryset = UserApplication.objects.all().order_by('-created_at').filter(user_from=user, status="Отправлена")
-    sorted_accepted = UserApplication.objects.all().order_by('-created_at')
-    queryset = queryset | sorted_accepted.filter(user_from=user, status="Принята")[:20]
-    sorted_rejected = UserApplication.objects.all().order_by('-created_at')
-    queryset = queryset | sorted_rejected.filter(user_from=user, status="Отклонена")[:20]
-    return queryset
-
-
 def is_there_incoming_application(username1, username2):
     user1 = User.objects.get(username=username1)
     user2 = User.objects.get(username=username2)
@@ -65,15 +56,20 @@ def is_there_incoming_application(username1, username2):
 def create_friendship(username1, username2):
     username1 = User.objects.get(username=username1)
     username2 = User.objects.get(username=username2)
-    if FriendshipStatusHandler.is_friendship(username1, username2):
-        return "Пользователь уже у вас в друзьях"
-
     Friendship.objects.create(user1=username1, user2=username2)
 
 
-def set_application_accepted_status(username1, username2):
+def set_application_status(username1, username2, status):
     user1 = User.objects.get(username=username1)
     user2 = User.objects.get(username=username2)
     application = UserApplication.objects.get(user_from=user2, user_to=user1)
-    application.status = "Принята"
+    application.status = status
     application.save()
+
+
+def set_decision(request, to_username, decision):
+    if decision == "accepted":
+        set_application_status(request.user.username, to_username, "Принята")
+        create_friendship(request.user.username, to_username)
+    elif decision == "rejected":
+        set_application_status(request.user.username, to_username, "Отклонена")

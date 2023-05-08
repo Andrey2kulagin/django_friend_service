@@ -86,10 +86,9 @@ class InOutcomingApplicationsTest(APITestCase):
         self.assertEqual(401, response.status_code)
 
 
-
 class SendApplicationsTest(APITestCase):
     def setUp(self):
-        # создаем 4 пользователей
+        # создаем пользователей
         self.first_user = User.objects.create_user(
             username='first_user', password='password')
         self.second_user = User.objects.create_user(
@@ -156,3 +155,171 @@ class SendApplicationsTest(APITestCase):
         self.client.force_authenticate(user=self.first_user)
         response = self.client.post(url, data, format='json')
         self.assertEqual(400, response.status_code)
+
+
+class DeleteApplicationsTest(APITestCase):
+    def setUp(self):
+        # создаем пользователей
+        self.first_user = User.objects.create_user(
+            username='first_user', password='password')
+        self.second_user = User.objects.create_user(
+            username='second_user', password='password')
+        self.third_user = User.objects.create_user(
+            username='third_user', password='password')
+        self.fourth_user = User.objects.create_user(
+            username='fourth_user', password='password')
+        self.fifth_user = User.objects.create_user(
+            username='fifth_user', password='password')
+        self.sixth_user = User.objects.create_user(
+            username='sixth_user', password='password')
+        # Создаем заявки
+        UserApplication.objects.create(user_from=self.first_user, user_to=self.second_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.fifth_user, user_to=self.second_user, status="Принята", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.second_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.first_user, user_to=self.third_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.second_user, user_to=self.third_user, status="Принята", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fourth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fifth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.sixth_user, status="Отклонена", )
+
+    def test_delete_application_1(self):
+        # стандартная работа
+        url = reverse('delete_application', kwargs={'user_to_username': self.fifth_user.username})
+        self.client.force_authenticate(user=self.third_user)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(204, response.status_code)
+        application = UserApplication.objects.filter(user_from=self.third_user, user_to=self.fifth_user)
+        self.assertEqual(0, len(application))
+
+    def test_delete_application_2(self):
+        # Удаление заявки, которой нет
+        url = reverse('delete_application', kwargs={'user_to_username': self.first_user.username})
+        self.client.force_authenticate(user=self.third_user)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(404, response.status_code)
+
+    def test_delete_application_3(self):
+        # Удаление заявки, без авторизации
+        url = reverse('delete_application', kwargs={'user_to_username': self.fifth_user.username})
+        response = self.client.delete(url, format='json')
+        self.assertEqual(401, response.status_code)
+
+    def test_delete_application_4(self):
+        # Удаление по username, которого нет
+        url = reverse('delete_application', kwargs={'user_to_username': "NoUsername"})
+        self.client.force_authenticate(user=self.third_user)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(404, response.status_code)
+
+
+
+class DecisionApplicationsTest(APITestCase):
+    def setUp(self):
+        # создаем пользователей
+        self.first_user = User.objects.create_user(
+            username='first_user', password='password')
+        self.second_user = User.objects.create_user(
+            username='second_user', password='password')
+        self.third_user = User.objects.create_user(
+            username='third_user', password='password')
+        self.fourth_user = User.objects.create_user(
+            username='fourth_user', password='password')
+        self.fifth_user = User.objects.create_user(
+            username='fifth_user', password='password')
+        self.sixth_user = User.objects.create_user(
+            username='sixth_user', password='password')
+        # Создаем заявки
+        UserApplication.objects.create(user_from=self.first_user, user_to=self.second_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.fifth_user, user_to=self.second_user, status="Принята", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.second_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.first_user, user_to=self.third_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.second_user, user_to=self.third_user, status="Принята", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fourth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fifth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.sixth_user, status="Отклонена", )
+        UserApplication.objects.create(user_from=self.first_user, user_to=self.fourth_user, status="Отправлена", )
+        Friendship.objects.create(user1=self.fourth_user, user2=self.first_user)
+
+    def test_delete_application_1(self):
+        # стандартная работа Принять заявку
+        user_from = self.first_user
+        user_to = self.third_user
+        url = reverse('decision')
+        data = {
+            'username': user_from.username,
+            'decision': 'accepted'
+        }
+        self.client.force_authenticate(user=user_to)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(200, response.status_code)
+        application = UserApplication.objects.get(user_from=user_from, user_to=user_to)
+        self.assertEqual("Принята", application.status)
+        friendship = Friendship.objects.filter(user1=user_to, user2=user_from)
+        self.assertEqual(1, len(friendship))
+
+    def test_delete_application_2(self):
+        # стандартная работа Отклонить заявку
+        user_from = self.first_user
+        user_to = self.third_user
+        url = reverse('decision')
+        data = {
+            'username': user_from.username,
+            'decision': 'rejected'
+        }
+        self.client.force_authenticate(user=user_to)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(200, response.status_code)
+        application = UserApplication.objects.get(user_from=user_from, user_to=user_to)
+        self.assertEqual("Отклонена", application.status)
+        friendship = Friendship.objects.filter(user1=user_to, user2=user_from)
+        self.assertEqual(0, len(friendship))
+
+    def test_delete_application_3(self):
+        # Подтверждение несуществующей заявки
+        user_from = self.sixth_user
+        user_to = self.third_user
+        url = reverse('decision')
+        data = {
+            'username': user_from.username,
+            'decision': 'rejected'
+        }
+        self.client.force_authenticate(user=user_to)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+
+    def test_delete_application_4(self):
+        # неправильный статус заявки
+        user_from = self.first_user
+        user_to = self.third_user
+        url = reverse('decision')
+        data = {
+            'username': user_from.username,
+            'decision': 'rejectded'
+        }
+        self.client.force_authenticate(user=user_to)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+
+    def test_delete_application_5(self):
+        # Несуществующий юзер
+        user_to = self.third_user
+        url = reverse('decision')
+        data = {
+            'username': "No_user",
+            'decision': 'rejected'
+        }
+        self.client.force_authenticate(user=user_to)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+
+    def test_delete_application_6(self):
+        # Уже друзья
+        url = reverse('decision')
+        data = {
+            'username': self.first_user.username,
+            'decision': 'rejected'
+        }
+        self.client.force_authenticate(user=self.fourth_user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+

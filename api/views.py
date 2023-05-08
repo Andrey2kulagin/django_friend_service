@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, UserIncomingApplicationSerializer, ApplicationSerializer, \
-    ApplicationSerializer
+from .serializers import UserSerializer, UserIncomingApplicationSerializer, ApplicationSerializer, DecisionSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .service import FriendshipStatusHandler, filter_queryset
+from .service import FriendshipStatusHandler, set_decision
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from .models import UserApplication
+from django.shortcuts import get_object_or_404
 
 
 # Create your views here.
@@ -47,7 +47,7 @@ class FriendshipStatus(APIView):
 
     def get(self, request, username):
         try:
-            friendship_status = FriendshipStatusHandler().friendship_status(self.request.user, username)
+            friendship_status = FriendshipStatusHandler().friendship_status(request.user, username)
             data = {'friendship_status': friendship_status}
             return Response(data, status=200)
         except User.DoesNotExist:
@@ -88,3 +88,33 @@ class SendApplication(CreateAPIView):
     serializer_class = ApplicationSerializer
     queryset = UserApplication.objects.all()
     permission_classes = [IsAuthenticated]
+
+
+class DeleteApplication(DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'user_to__username'
+
+    def get_queryset(self):
+        request = self.request
+        queryset = UserApplication.objects.filter(user_from=request.user)
+        return queryset
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, user_to__username=self.kwargs['user_to_username'])
+        return obj
+
+
+class ApplicationDecision(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DecisionSerializer
+
+    def post(self, request):
+        serializer = DecisionSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            data = serializer.validated_data
+            set_decision(request, data["username"], data["decision"])
+            return Response({"status": "decision is set"}, status=200)
+        else:
+            errors = serializer.errors
+            return Response(errors, status=400)
