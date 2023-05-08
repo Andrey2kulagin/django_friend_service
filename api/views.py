@@ -66,7 +66,8 @@ class IncomingApplicationsList(ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method == "GET":
-            queryset = UserApplication.objects.filter(user_to=self.request.user, status="Отправлена")
+            queryset = UserApplication.objects.filter(user_to=self.request.user, status="Отправлена").order_by(
+                '-created_at')
         return queryset
 
 
@@ -78,7 +79,8 @@ class OutcomingApplicationsList(ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method == "GET":
-            queryset = filter_queryset(self.request.user)
+            queryset = UserApplication.objects.filter(user_from=self.request.user, status="Отправлена").order_by(
+                '-created_at')
         return queryset
 
 

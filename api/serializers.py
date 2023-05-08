@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import UserApplication
-from .service import is_there_incoming_application, create_friendship, set_application_accepted_status, FriendshipStatusHandler
+from .service import is_there_incoming_application, create_friendship, set_application_accepted_status, \
+    FriendshipStatusHandler
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -52,6 +53,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserIncomingApplicationSerializer(serializers.ModelSerializer):
+    user_from = serializers.CharField(source='user_from.username')
+
     class Meta:
         model = UserApplication
         fields = [
@@ -79,7 +82,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
                                                                        user_to=users[0], status="Отправлена")
         if user_from_active_applications.exists():
             raise serializers.ValidationError("Уже есть активная заявка с этим пользователем")
-        if FriendshipStatusHandler.is_friendship(request.user,users[0]):
+        if FriendshipStatusHandler.is_friendship(request.user, users[0]):
             raise serializers.ValidationError("Уже дружба этим пользователем")
         return data
 

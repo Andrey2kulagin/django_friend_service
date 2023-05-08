@@ -47,7 +47,7 @@ class FriendshipStatusHandler:
 
 
 def filter_queryset(user):
-    queryset = UserApplication.objects.all().order_by('created_at').filter(user_from=user, status="Отправлена")
+    queryset = UserApplication.objects.all().order_by('-created_at').filter(user_from=user, status="Отправлена")
     sorted_accepted = UserApplication.objects.all().order_by('-created_at')
     queryset = queryset | sorted_accepted.filter(user_from=user, status="Принята")[:20]
     sorted_rejected = UserApplication.objects.all().order_by('-created_at')

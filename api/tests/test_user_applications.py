@@ -15,12 +15,19 @@ class InOutcomingApplicationsTest(APITestCase):
             username='third_user', password='password')
         self.fourth_user = User.objects.create_user(
             username='fourth_user', password='password')
+        self.fifth_user = User.objects.create_user(
+            username='fifth_user', password='password')
+        self.sixth_user = User.objects.create_user(
+            username='sixth_user', password='password')
         # Создаем заявки
         UserApplication.objects.create(user_from=self.first_user, user_to=self.second_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.fifth_user, user_to=self.second_user, status="Принята", )
         UserApplication.objects.create(user_from=self.third_user, user_to=self.second_user, status="Отправлена", )
         UserApplication.objects.create(user_from=self.first_user, user_to=self.third_user, status="Отправлена", )
         UserApplication.objects.create(user_from=self.second_user, user_to=self.third_user, status="Принята", )
-        UserApplication.objects.create(user_from=self.third_user, user_to=self.fourth_user, status="Отклонена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fourth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.fifth_user, status="Отправлена", )
+        UserApplication.objects.create(user_from=self.third_user, user_to=self.sixth_user, status="Отклонена", )
 
     def test_incoming_list_1(self):
         # стандартная работа
@@ -29,6 +36,10 @@ class InOutcomingApplicationsTest(APITestCase):
         response = self.client.get(url, format='json')
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data))
+        incoming_applications = UserApplication.objects.filter(user_to=self.second_user, status="Отправлена").order_by(
+            '-created_at')
+        self.assertEqual(incoming_applications[0].user_from.username, response.data[0]["user_from"])
+        self.assertEqual(incoming_applications[1].user_from.username, response.data[1]["user_from"])
 
     def test_incoming_list_2(self):
         # отсутствие заявок
@@ -49,8 +60,16 @@ class InOutcomingApplicationsTest(APITestCase):
         url = reverse('outcoming_list')
         self.client.force_authenticate(user=self.third_user)
         response = self.client.get(url, format='json')
+        outcoming_applications = UserApplication.objects.filter(user_from=self.third_user,
+                                                                status="Отправлена").order_by('-created_at')
         self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data))
+        self.assertEqual(3, len(response.data))
+        self.assertEqual(outcoming_applications[0].user_to.username, response.data[0]["user_to"])
+        self.assertEqual(outcoming_applications[0].status, response.data[0]["status"])
+        self.assertEqual(outcoming_applications[1].user_to.username, response.data[1]["user_to"])
+        self.assertEqual(outcoming_applications[1].status, response.data[1]["status"])
+        self.assertEqual(outcoming_applications[2].user_to.username, response.data[2]["user_to"])
+        self.assertEqual(outcoming_applications[2].status, response.data[1]["status"])
 
     def test_outcoming_list_2(self):
         # отсутствие заявок
@@ -137,4 +156,3 @@ class SendApplicationsTest(APITestCase):
         self.client.force_authenticate(user=self.first_user)
         response = self.client.post(url, data, format='json')
         self.assertEqual(400, response.status_code)
-
