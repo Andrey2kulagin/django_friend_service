@@ -17,18 +17,42 @@ OpenApi спецификация: https://app.swaggerhub.com/apis/andrey2kulagin
 ## Описание запуска(подразумевается, что поставлен python и pip и git)
 1. Склонировать проект перейти в папку, которую склонировали, создать и запустить виртуальное окружение
 Клонирование проекта:
-   ```
-   git clone  https://github.com/Andrey2kulagin/django_friend_service.git
-   cd django_friend_service
-   ```
-Настройка виртуального окружения для windows
+  ```
+  git clone  https://github.com/Andrey2kulagin/django_friend_service.git
+  cd django_friend_service
+  ```
+2. Настройка виртуального окружения для windows
   ```
   python -m venv venv
   venv\Scripts\activate.bat
   ```
-Настройка виртуального окружения для Unix(macOS, Linux)
-```
+3. Настройка виртуального окружения для Unix(macOS, Linux)
+ ```
  python -m venv venv
  source venv/bin/activate
  ```
- 
+ 4. Установка необходимых библиотек
+ ```
+ pip list -r requirements.txt
+ ```
+ 5. Проведение миграций(для unix-систем python3 вместо python)
+ ```
+ python manage.py migrate
+ ```
+ 6. запуск тестов и просмотр покрытия(необязательно)
+  ```
+  coverage run manage.py test api/tests
+  coverage report
+  ```
+  7. Запуск отладочного сервера
+  ```
+  python manage.py runserver
+  ```
+  8. Тестирование 
+  * По умолчанию тестовый сервер должен быть подняться на локальном хосте и 8000-м порту(http://127.0.0.1:8000)
+  * Тестирование можно проводить из браузера или из postman, для этого надо ставить http://127.0.0.1:8000/api/v1/ + ендпоинт, которые описаны в swagger
+  * При запуске из postman надо так же указать нужные параметры и метод(описано в swagger)
+  * Для авторизации используются JWT-токены(эндпоинты для их получения указаны в swagger). 
+  * Access-токен действует 1 час для авторизации в заголовок хапроса надо вставить параметр Authorization со значением "Bearer"+пробел + access-token 
+  * Пример значения Authorization Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjgzNTY3MDcxLCJpYXQiOjE2ODM1NjM0NzEsImp0aSI6ImU2MGJlNjU2NGE2YzQwYThiYmNkMzlkZWZkYTE2ZjM5IiwidXNlcl9pZCI6MX0.yCA-50wloVhRYRrc5phrr-jgbGpMDNKioi_-IornoXw
+  
