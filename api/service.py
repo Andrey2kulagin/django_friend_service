@@ -56,27 +56,24 @@ def filter_queryset(user):
 
 
 def is_there_incoming_application(username1, username2):
-    return UserApplication.objects.filter(user_from=username2, user_to=username1,
+    user1 = User.objects.get(username=username1)
+    user2 = User.objects.get(username=username2)
+    return UserApplication.objects.filter(user_from=user2, user_to=user1,
                                           status="Отправлена").exists()
 
 
-def user_application_create(self, serializer, request):
-    validate_data = serializer.is_valid(raise_exception=True)
-    if is_there_incoming_application(request.user, validate_data.get("user_to")):
-        my_model = serializer.save()
-        my_model.user_from = request.user
-        my_model.status = "Отправлена"
-        my_model.save()
-    else:
-        create_friendship(request.user, validate_data.get("user_to"))
-    headers = self.get_success_headers(serializer.data)
-    return Response(serializer.data, status=201, headers=headers)
-
-
 def create_friendship(username1, username2):
+    username1 = User.objects.get(username=username1)
+    username2 = User.objects.get(username=username2)
     if FriendshipStatusHandler.is_friendship(username1, username2):
-        raise Exception("Пользователь уже у вас в друзьях")
-    username1 = User.objects.get(username1)
-    username2 = User.objects.get(username2)
+        return "Пользователь уже у вас в друзьях"
+
     Friendship.objects.create(user1=username1, user2=username2)
 
+
+def set_application_accepted_status(username1, username2):
+    user1 = User.objects.get(username=username1)
+    user2 = User.objects.get(username=username2)
+    application = UserApplication.objects.get(user_from=user2, user_to=user1)
+    application.status = "Принята"
+    application.save()

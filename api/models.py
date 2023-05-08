@@ -16,6 +16,9 @@ class UserApplication(models.Model):
     class Meta:
         unique_together = ('user_from', 'user_to')  # чтобы не было дубликатов
 
+    def __str__(self):
+        return f"from:{self.user_from} to {self.user_to} status {self.status}"
+
 
 class Friendship(models.Model):
     user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friends1')

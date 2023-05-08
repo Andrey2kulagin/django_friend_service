@@ -67,6 +67,7 @@ class InOutcomingApplicationsTest(APITestCase):
         self.assertEqual(401, response.status_code)
 
 
+
 class SendApplicationsTest(APITestCase):
     def setUp(self):
         # создаем 4 пользователей
@@ -78,6 +79,9 @@ class SendApplicationsTest(APITestCase):
             username='third_user', password='password')
         self.fourth_user = User.objects.create_user(
             username='fourth_user', password='password')
+        self.application = UserApplication.objects.create(user_from=self.third_user, user_to=self.second_user,
+                                                          status="Отправлена", )
+        Friendship.objects.create(user1=self.fourth_user, user2=self.first_user)
 
     def test_send_application_1(self):
         # стандартная работа
@@ -87,6 +91,50 @@ class SendApplicationsTest(APITestCase):
         }
         self.client.force_authenticate(user=self.second_user)
         response = self.client.post(url, data, format='json')
-        print(response.data)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data))
+        self.assertEqual(201, response.status_code)
+        application = UserApplication.objects.get(user_from=self.second_user, user_to=self.first_user)
+        self.assertEqual("Отправлена", application.status)
+
+    def test_send_application_2(self):
+        # Пользователя с таким именем не существует
+        url = reverse('send_application')
+        data = {
+            "user_to": "no_username"
+        }
+        self.client.force_authenticate(user=self.second_user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+
+    def test_send_application_3(self):
+        # Заявка уже отправлена
+        url = reverse('send_application')
+        data = {
+            "user_to": self.second_user.username
+        }
+        self.client.force_authenticate(user=self.third_user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+
+    def test_send_application_4(self):
+        # заявка, переходящая в дружбу
+        url = reverse('send_application')
+        data = {
+            "user_to": self.third_user.username
+        }
+        self.client.force_authenticate(user=self.second_user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(201, response.status_code)
+        application = UserApplication.objects.get(user_from=self.third_user, user_to=self.second_user)
+        self.assertEqual("Принята", application.status)
+        self.assertEqual(1, len(Friendship.objects.filter(user1=self.second_user, user2=self.third_user)))
+
+    def test_send_application_5(self):
+        # заявка другу
+        url = reverse('send_application')
+        data = {
+            "user_to": self.fourth_user.username
+        }
+        self.client.force_authenticate(user=self.first_user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(400, response.status_code)
+

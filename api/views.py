@@ -6,7 +6,7 @@ from .serializers import UserSerializer, UserIncomingApplicationSerializer, Appl
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .service import FriendshipStatusHandler, filter_queryset, user_application_create
+from .service import FriendshipStatusHandler, filter_queryset
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from .models import UserApplication
 
@@ -83,15 +83,6 @@ class OutcomingApplicationsList(ListAPIView):
 
 
 class SendApplication(CreateAPIView):
-    queryset = UserApplication.objects.all()
     serializer_class = ApplicationSerializer
+    queryset = UserApplication.objects.all()
     permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-
-        try:
-            return user_application_create(self, serializer, request)
-        except User.DoesNotExist:
-            data = {'Error': "Такого пользователя не существует"}
-            return Response(data, status=404)
